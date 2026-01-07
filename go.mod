@@ -1,4 +1,4 @@
-module github.com/psaraiva/lab-go-horse-racing-by-cobra
+module github.com/psaraiva/go-horse-racing-by-cobra
 
 go 1.24
 

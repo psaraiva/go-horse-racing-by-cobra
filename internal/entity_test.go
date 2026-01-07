@@ -9,7 +9,7 @@ import (
 func TestWinner(t *testing.T) {
 	horse := &Horse{
 		Label: "A",
-		Score: 10,
 	}
+	horse.Score.Store(10)
 	assert.Equal(t, "The horse winner is: A - Score 10", horse.Winner())
 }

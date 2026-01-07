@@ -8,7 +8,7 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o /app/go-horses-racing-by-cobra .
+RUN CGO_ENABLED=0 GOOS=linux go build -o /app/go-horses-racing-by-cobra ./cmd
 
 FROM scratch
 

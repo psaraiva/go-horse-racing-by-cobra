@@ -6,3 +6,4 @@ dist/
 *.bin
 # Test
 coverage.txt
+coverage.html

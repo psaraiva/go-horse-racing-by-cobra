@@ -1,45 +1,66 @@
-[![project](https://img.shields.io/badge/github-psaraiva%2Flab--go--horse--racing--by--cobra-blue)](https://img.shields.io/badge/github-psaraiva%2Flab--go--horse--racing--by--cobra-blue)
+[![project](https://img.shields.io/badge/github-psaraiva%2Fgo--horse--racing--by--cobra-blue)](https://img.shields.io/badge/github-psaraiva%2Fgo--horse--racing--by--cobra-blue)
 [![License](https://img.shields.io/badge/license-MIT-%233DA639.svg)](https://opensource.org/licenses/MIT)
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/psaraiva/lab-go-horse-racing-by-cobra)](https://goreportcard.com/report/github.com/psaraiva/lab-go-horse-racing-by-cobra)
-![Codecov](https://img.shields.io/codecov/c/github/psaraiva/lab-go-horse-racing-by-cobra)
+[![Go Report Card](https://goreportcard.com/badge/github.com/psaraiva/go-horse-racing-by-cobra)](https://goreportcard.com/report/github.com/psaraiva/go-horse-racing-by-cobra)
+![Codecov](https://img.shields.io/codecov/c/github/psaraiva/go-horse-racing-by-cobra)
 
 [![Idioma: English](https://img.shields.io/badge/Idioma-English-blue?style=flat-square)](README.md)
 
-# 🐎 Lab Go: Corrida de Cavalos por Cobra 🐍
+# Corrida de Cavalos por Cobra 🐎🐍
 
 ## 🎯 Objetivo
-Este laboratório demonstra o uso de Goroutines de uma forma simples, prática e divertida, utilizando a biblioteca Cobra.
+Este jogo demonstra o uso de Goroutines (concorrência) de uma forma simples, prática e divertida, utilizando a biblioteca Cobra.
 
 ## ⚙️ Como isso funciona?
 Os cavalos correm até o primeiro cruzar a linha de chegada.
 
-## 💻 Comandos
-Exemplo de uso
+## 🚀 Início Rápido
 ```bash
-git clone https://github.com/psaraiva/lab-go-horse-racing-by-cobra.git
-cp lab-go-horse-racing-by-cobra
-docker build -t lab-go-horse-racing-by-cobra .
+# Clone o repositório
+git clone https://github.com/psaraiva/go-horse-racing-by-cobra.git
+cd go-horse-racing-by-cobra
+
+# Execute com Docker
+make docker-build
+make docker-run
 ```
 
-Executa com configuração padrão
+## Preview
+![Preview](./asset/horse_race.gif)
+
+## 🛠️ Makefile
+O projeto inclui um Makefile com comandos úteis para desenvolvimento e execução:
+
+### Comandos de Desenvolvimento
 ```bash
-docker run --rm -it lab-go-horse-racing-by-cobra
+make help            # Exibe todos os comandos disponíveis
+make test            # Executa todos os testes
+make test-race       # Executa testes com detecção de race conditions
+make test-coverage   # Executa testes com cobertura e gera relatório HTML
+make build           # Compila o projeto
+make clean           # Remove arquivos gerados
 ```
 
-Executa com 5 cavalos e alvo de 50 pontos
+### Comandos Docker
 ```bash
-docker run --rm -it lab-go-horse-racing-by-cobra --horses-quantity 5 --score-target 50
+make docker-build    # Constrói a imagem Docker
+make docker-run      # Executa o container interativamente (configuração padrão)
+make docker-stop     # Para e remove o container Docker
+make docker-deploy   # Para container, constrói imagem e prepara para execução
+make docker-clean    # Para container e remove a imagem Docker
+make docker-rebuild  # Reconstrói a imagem do zero
 ```
 
-Executa com o label 'C' e um timeout de 15 segundos
+Para executar com parâmetros customizados, use a variável ARGS:
 ```bash
-docker run --rm -it lab-go-horse-racing-by-cobra --horse-label C --game-timeout 15s
-```
+# Com 5 cavalos e alvo de 50 pontos
+make docker-run ARGS="--horses-quantity 5 --score-target 50"
 
-Executa com o 20 cavalos, label 'P', alvo 75 ponsto e um timeout de 90 segundos
-```bash
-docker run --rm -it lab-go-horse-racing-by-cobra --horses-quantity 20 --horse-label P --score-target 50 --game-timeout 90s
+# Com label 'C' e timeout de 15 segundos
+make docker-run ARGS="--horse-label C --game-timeout 15s"
+
+# Com 20 cavalos, label 'P', alvo 75 pontos e timeout de 90 segundos
+make docker-run ARGS="--horses-quantity 20 --horse-label P --score-target 75 --game-timeout 90s"
 ```
 
 ## 🔧 Parâmetros
@@ -82,5 +103,3 @@ H03|.....................H03                                                    
 
 Today is a very hot day, the horses are tired!
 ```
-## Preview
-![Preview](./asset/horse_race.gif)

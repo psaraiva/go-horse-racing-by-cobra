@@ -1,9 +1,9 @@
-package cmd
+package main
 
 import (
 	"os"
 
-	"github.com/psaraiva/lab-go-horse-racing-by-cobra/internal"
+	"github.com/psaraiva/go-horse-racing-by-cobra/internal"
 
 	"github.com/spf13/cobra"
 )
@@ -15,7 +15,7 @@ var rootCmd = &cobra.Command{
 Horses race against other horses under human supervision...`,
 }
 
-func Execute() {
+func main() {
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}

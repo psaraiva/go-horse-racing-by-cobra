@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -47,6 +48,7 @@ var (
 	horseLabel          = HorseLabelDefault
 	horseQuantity       = HorseQuantityDefault
 	horseWinner         = &Horse{}
+	horseWinnerMutex    = &sync.Mutex{}
 	scoreTarget         = ScoreTargetDefault
 	gameTimeout         = GameTimeoutDefault
 	gameTimeoutDuration = time.Duration(GameTimeoutMax) * time.Second
@@ -60,13 +62,20 @@ func Run(input Input) {
 	setGameTimeout(input.GameTimeout)
 	setGameTimeoutDuration()
 	loadHorses(horseQuantity)
-	chGameOver := make(chan bool)
+	chGameOver := make(chan bool, 1)
 	isGameOver := atomic.Bool{}
+	winnerOnce := &sync.Once{}
+	wg := &sync.WaitGroup{}
 
-	go display()
+	wg.Add(1)
+	go display(wg)
+
+	horsesMutex.RLock()
 	for _, horse := range horses {
-		go goHorse(horse, &isGameOver, chGameOver)
+		wg.Add(1)
+		go goHorse(horse, &isGameOver, chGameOver, winnerOnce, wg)
 	}
+	horsesMutex.RUnlock()
 
 	outStr := "\x01"
 	select {
@@ -75,11 +84,15 @@ func Run(input Input) {
 	case <-time.After(gameTimeoutDuration):
 		outStr += "\x01Today is a very hot day, the horses are tired!"
 	}
+	isGameOver.Store(true)
 	close(chGameOver)
+	wg.Wait()
 
-	if horseWinner.Score > 0 {
+	horseWinnerMutex.Lock()
+	if horseWinner.GetScore() > 0 {
 		outStr += "\n" + horseWinner.Winner()
 	}
+	horseWinnerMutex.Unlock()
 
 	fmt.Println(outStr)
 }
@@ -132,6 +145,9 @@ func loadHorses(quantity int) {
 		quantity = HorseQuantityDefault
 	}
 
+	horsesMutex.Lock()
+	defer horsesMutex.Unlock()
+
 	for i := 0; i < quantity; i++ {
 		index := i + 1
 		prefix := ""
@@ -143,9 +159,11 @@ func loadHorses(quantity int) {
 	}
 }
 
-func goHorse(target *Horse, isGameOver *atomic.Bool, chGameOver chan bool) {
-	if target.Score < 0 {
-		target.Score = 0
+func goHorse(target *Horse, isGameOver *atomic.Bool, chGameOver chan bool, winnerOnce *sync.Once, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	if target.GetScore() < 0 {
+		target.Score.Store(0)
 	}
 
 	ticker := time.NewTicker(DelayHorseStep)
@@ -155,15 +173,23 @@ func goHorse(target *Horse, isGameOver *atomic.Bool, chGameOver chan bool) {
 	for {
 		select {
 		case <-ticker.C:
-			target.Score += r.Intn(HorseSpeedMax) + HorseSpeedMin
-			if target.Score >= scoreTarget {
-				if isGameOver.Load() {
-					return
-				}
+			if isGameOver.Load() {
+				return
+			}
 
-				isGameOver.Store(true)
-				chGameOver <- true
-				horseWinner = target
+			target.AddScore(int32(r.Intn(HorseSpeedMax) + HorseSpeedMin))
+
+			if target.GetScore() >= int32(scoreTarget) {
+				winnerOnce.Do(func() {
+					isGameOver.Store(true)
+					horseWinnerMutex.Lock()
+					horseWinner = target
+					horseWinnerMutex.Unlock()
+					select {
+					case chGameOver <- true:
+					default:
+					}
+				})
 				return
 			}
 		case <-chGameOver:
@@ -172,10 +198,17 @@ func goHorse(target *Horse, isGameOver *atomic.Bool, chGameOver chan bool) {
 	}
 }
 
-func display() {
+func display(wg *sync.WaitGroup) {
+	defer wg.Done()
+
 	for {
 		fmt.Println(clearTerminal() + "\n" + getRaceStr())
-		if horseWinner.Score > 0 {
+
+		horseWinnerMutex.Lock()
+		hasWinner := horseWinner.GetScore() > 0
+		horseWinnerMutex.Unlock()
+
+		if hasWinner {
 			break
 		}
 		time.Sleep(DelayRefreshScreen)
@@ -189,9 +222,13 @@ func clearTerminal() string {
 func getRaceStr() string {
 	msg := ""
 	msg += generateTrackMark(scoreTarget) + "\n"
+
+	horsesMutex.RLock()
 	for _, horse := range horses {
 		msg += generateHorseTrack(horse, scoreTarget) + "\n"
 	}
+	horsesMutex.RUnlock()
+
 	msg += generateTrackMark(scoreTarget) + "\n"
 	return msg
 }
@@ -202,11 +239,12 @@ func generateHorseTrack(horse *Horse, scoreTarget int) string {
 		scoreTarget = ScoreTargetDefault
 	}
 
-	if scoreTarget-horse.Score > 0 {
-		more = strings.Repeat(" ", scoreTarget-horse.Score-1)
+	currentScore := int(horse.GetScore())
+	if scoreTarget-currentScore > 0 {
+		more = strings.Repeat(" ", scoreTarget-currentScore-1)
 	}
 
-	less := strings.Repeat(".", horse.Score)
+	less := strings.Repeat(".", currentScore)
 	return fmt.Sprintf("%s|%v%v%v|", horse.Label, less, horse.Label, more)
 }
 
@@ -228,6 +266,8 @@ func generateTrackMark(scoreTarget int) string {
 }
 
 func clearHorses() {
+	horsesMutex.Lock()
+	defer horsesMutex.Unlock()
 	horses = []*Horse{}
 }
 
